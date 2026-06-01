@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Prekladač — macOS menu bar translator
-"""
+"""Prekladac — macOS menu bar translator"""
 
 import rumps
 import threading
@@ -12,9 +10,10 @@ from translator import translate_text
 from ocr import capture_and_ocr
 from database import HistoryDB
 from hotkeys import HotkeyManager
+from floating import show_result, show_status
 
 CONFIG_PATH = os.path.expanduser("~/.config/prekladac/config.json")
-ICON_PATH = os.path.join(os.path.dirname(__file__), "menubar_icon.png")
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "menubar_icon.png")
 
 DEFAULT_CONFIG = {
     "api_key": "",
@@ -24,78 +23,31 @@ DEFAULT_CONFIG = {
 
 LANGUAGES = {
     "auto": "Automaticky",
-    "sk": "Slovenčina",
-    "cs": "Čeština",
-    "en": "Angličtina",
-    "de": "Nemčina",
-    "fr": "Francúzština",
-    "es": "Španielčina",
-    "it": "Taliančina",
-    "pl": "Poľština",
-    "hu": "Maďarčina",
-    "ru": "Ruština",
-    "zh": "Čínština",
-    "ja": "Japončina",
-    "ko": "Kórejčina",
-    "uk": "Ukrajinčina",
+    "sk": "Slovenčina", "cs": "Čeština", "en": "Angličtina",
+    "de": "Nemčina", "fr": "Francúzština", "es": "Španielčina",
+    "it": "Taliančina", "pl": "Poľština", "hu": "Maďarčina",
+    "ru": "Ruština", "uk": "Ukrajinčina", "zh": "Čínština",
+    "ja": "Japončina", "ko": "Kórejčina",
 }
-
-
-def notify(title, message):
-    """Show macOS notification."""
-    script = f'display notification "{message}" with title "{title}"'
-    subprocess.run(["osascript", "-e", script], capture_output=True)
-
-
-def ask(prompt, default=""):
-    """Show input dialog via AppleScript."""
-    script = f'display dialog "{prompt}" default answer "{default}" with title "Prekladač"'
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    if result.returncode == 0:
-        return result.stdout.strip().split("text returned:")[-1].strip()
-    return None
-
-
-def show_result(original, translated):
-    """Show translation result — copy to clipboard option."""
-    short = translated[:200] + ("..." if len(translated) > 200 else "")
-    script = f'''
-    set r to display dialog "Preklad:" & return & return & "{short}" ¬
-        with title "Prekladač" ¬
-        buttons {{"Zavrieť", "Kopírovať"}} ¬
-        default button "Kopírovať"
-    '''
-    result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    if "Kopírovať" in result.stdout:
-        subprocess.run(["pbcopy"], input=translated.encode())
 
 
 class PrekladacApp(rumps.App):
     def __init__(self):
         icon = ICON_PATH if os.path.exists(ICON_PATH) else None
-        super().__init__(
-            "Prekladač",
-            icon=icon,
-            template=True,
-            quit_button=None,
-        )
+        super().__init__("", icon=icon, template=True, quit_button=None)
         self.config = self._load_config()
         self.db = HistoryDB()
         self._build_menu()
-        self.hotkeys = HotkeyManager(
-            on_ocr=self._trigger_ocr,
-            on_clipboard=self._trigger_clipboard,
-        )
-        self.hotkeys.start()
+        HotkeyManager(on_ocr=self._do_ocr, on_clipboard=self._do_clipboard).start()
 
     def _load_config(self):
         os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
-        if os.path.exists(CONFIG_PATH):
-            try:
+        try:
+            if os.path.exists(CONFIG_PATH):
                 with open(CONFIG_PATH) as f:
                     return {**DEFAULT_CONFIG, **json.load(f)}
-            except Exception:
-                pass
+        except Exception:
+            pass
         return DEFAULT_CONFIG.copy()
 
     def save_config(self):
@@ -103,116 +55,98 @@ class PrekladacApp(rumps.App):
             json.dump(self.config, f, indent=2)
 
     def _build_menu(self):
-        tgt = LANGUAGES.get(self.config["target_lang"], "?")
-        src = LANGUAGES.get(self.config["source_lang"], "Auto")
+        src_name = LANGUAGES.get(self.config["source_lang"], "?")
+        tgt_name = LANGUAGES.get(self.config["target_lang"], "?")
 
-        source_items = [
+        src_items = [
             rumps.MenuItem(
-                ("✓ " if code == self.config["source_lang"] else "  ") + name,
-                callback=lambda _, c=code: self._set_source(c),
+                ("✓ " if code == self.config["source_lang"] else "   ") + name,
+                callback=lambda _, c=code: self._set_lang("source_lang", c),
             )
             for code, name in LANGUAGES.items()
         ]
-        target_items = [
+        tgt_items = [
             rumps.MenuItem(
-                ("✓ " if code == self.config["target_lang"] else "  ") + name,
-                callback=lambda _, c=code: self._set_target(c),
+                ("✓ " if code == self.config["target_lang"] else "   ") + name,
+                callback=lambda _, c=code: self._set_lang("target_lang", c),
             )
             for code, name in LANGUAGES.items()
             if code != "auto"
         ]
 
+        has_key = bool(self.config.get("api_key"))
+        key_status = "✓ API kľúč nastavený" if has_key else "⚠️  Nastav API kľúč"
+
         self.menu = [
-            rumps.MenuItem(f"{src} → {tgt}"),
+            rumps.MenuItem(f"{src_name} → {tgt_name}"),
             None,
-            rumps.MenuItem("⌘K  OCR — vyber oblasť", callback=self._trigger_ocr),
-            rumps.MenuItem("2×C  Preložiť výber", callback=self._trigger_clipboard),
+            rumps.MenuItem("Preložiť výber  (⌘C ⌘C)", callback=lambda _: threading.Thread(target=self._do_clipboard, daemon=True).start()),
+            rumps.MenuItem("OCR snímka  (⌘K)", callback=lambda _: threading.Thread(target=self._do_ocr, daemon=True).start()),
             None,
-            rumps.MenuItem("Zdrojový jazyk", source_items),
-            rumps.MenuItem("Cieľový jazyk", target_items),
+            rumps.MenuItem("Zdrojový jazyk", src_items),
+            rumps.MenuItem("Cieľový jazyk", tgt_items),
             None,
-            rumps.MenuItem("🔑  Nastaviť API kľúč", callback=self._set_api_key),
-            rumps.MenuItem("📋  História (posledných 5)", callback=self._show_history),
+            rumps.MenuItem(key_status, callback=self._set_api_key),
             None,
             rumps.MenuItem("Ukončiť", callback=rumps.quit_application),
         ]
 
-    def _set_source(self, code):
-        self.config["source_lang"] = code
+    def _set_lang(self, key, code):
+        self.config[key] = code
         self.save_config()
         self._build_menu()
 
-    def _set_target(self, code):
-        self.config["target_lang"] = code
-        self.save_config()
-        self._build_menu()
-
-    @rumps.clicked("🔑  Nastaviť API kľúč")
     def _set_api_key(self, _=None):
         current = self.config.get("api_key", "")
-        hint = current[:8] + "..." if len(current) > 8 else ""
-        val = ask(f"Vlož Groq API kľúč:\n(aktuálny: {hint or 'nenastavený'})\n\nconsole.groq.com → API Keys")
-        if val and val.strip():
-            self.config["api_key"] = val.strip()
-            self.save_config()
-            notify("Prekladač", "API kľúč bol uložený ✓")
-
-    def _trigger_ocr(self, _=None):
-        if not self.config.get("api_key"):
-            notify("Prekladač", "⚠️ Najprv nastav API kľúč — klikni na ikonku → Nastaviť API kľúč")
-            return
-        threading.Thread(target=self._do_ocr, daemon=True).start()
-
-    def _do_ocr(self):
-        notify("Prekladač", "🔍 Vyber oblasť na obrazovke...")
-        text = capture_and_ocr()
-        if not text or not text.strip():
-            notify("Prekladač", "❌ Žiadny text sa nenašiel")
-            return
-        notify("Prekladač", "⏳ Prekladám...")
-        result = translate_text(
-            text, self.config["source_lang"], self.config["target_lang"], self.config["api_key"]
+        hint = (current[:6] + "…") if current else "prázdny"
+        result = subprocess.run(
+            ["osascript", "-e",
+             f'display dialog "Vlož Groq API kľúč:\\n(aktuálny: {hint})\\n\\nZískaš zadarmo na console.groq.com" '
+             f'default answer "" with title "Prekladač — API kľúč"'],
+            capture_output=True, text=True,
         )
-        if result:
-            self.db.add(text, result, self.config["source_lang"], self.config["target_lang"])
-            threading.Thread(target=show_result, args=(text, result), daemon=True).start()
-
-    def _trigger_clipboard(self, _=None):
-        if not self.config.get("api_key"):
-            notify("Prekladač", "⚠️ Najprv nastav API kľúč")
-            return
-        threading.Thread(target=self._do_clipboard, daemon=True).start()
+        if result.returncode == 0:
+            val = result.stdout.strip().split("text returned:")[-1].strip()
+            if val:
+                self.config["api_key"] = val
+                self.save_config()
+                self._build_menu()
+                show_status("API kľúč uložený ✓")
 
     def _do_clipboard(self):
+        if not self.config.get("api_key"):
+            show_status("⚠️ Nastav API kľúč — klikni na ikonku v menu bare")
+            return
         r = subprocess.run(["pbpaste"], capture_output=True, text=True)
         text = r.stdout.strip()
         if not text:
-            notify("Prekladač", "❌ Schránka je prázdna — skopíruj najprv nejaký text")
+            show_status("Schránka je prázdna — skopíruj najprv text")
             return
-        notify("Prekladač", "⏳ Prekladám...")
-        result = translate_text(
-            text, self.config["source_lang"], self.config["target_lang"], self.config["api_key"]
-        )
-        if result:
+        show_status("Prekladám…")
+        result = translate_text(text, self.config["source_lang"], self.config["target_lang"], self.config["api_key"])
+        if result and not result.startswith("Chyba:"):
             self.db.add(text, result, self.config["source_lang"], self.config["target_lang"])
-            threading.Thread(target=show_result, args=(text, result), daemon=True).start()
+            show_result(text, result)
+        else:
+            show_status(result or "Chyba prekladu")
 
-    def _show_history(self, _=None):
-        rows = self.db.get_all(limit=5)
-        if not rows:
-            notify("Prekladač", "História je prázdna")
+    def _do_ocr(self):
+        if not self.config.get("api_key"):
+            show_status("⚠️ Nastav API kľúč — klikni na ikonku v menu bare")
             return
-        lines = []
-        for row in rows:
-            _, src, tgt, *_ = row
-            lines.append(f"• {src[:40]}…\n  → {tgt[:40]}…")
-        text = "\n\n".join(lines)
-        subprocess.run(
-            ["osascript", "-e", f'display dialog "{text}" with title "Posledné preklady" buttons {{"OK"}}'],
-            capture_output=True,
-        )
+        show_status("Vyber oblasť na obrazovke…")
+        text = capture_and_ocr()
+        if not text or not text.strip():
+            show_status("Žiadny text sa nenašiel")
+            return
+        show_status("Prekladám…")
+        result = translate_text(text, self.config["source_lang"], self.config["target_lang"], self.config["api_key"])
+        if result and not result.startswith("Chyba:"):
+            self.db.add(text, result, self.config["source_lang"], self.config["target_lang"])
+            show_result(text, result)
+        else:
+            show_status(result or "Chyba prekladu")
 
 
 if __name__ == "__main__":
-    app = PrekladacApp()
-    app.run()
+    PrekladacApp().run()

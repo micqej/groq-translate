@@ -6,15 +6,9 @@ a = Analysis(
     binaries=[],
     datas=[('menubar_icon.png', '.')],
     hiddenimports=[
-        'rumps',
-        'groq',
-        'httpx',
-        'anyio',
-        'certifi',
-        'sqlite3',
-        'Quartz',
-        'CoreFoundation',
-        'objc',
+        'rumps', 'groq', 'httpx', 'anyio', 'certifi',
+        'sqlite3', 'Quartz', 'CoreFoundation', 'AppKit',
+        'Foundation', 'objc', 'distutils',
     ],
     hookspath=[],
     runtime_hooks=[],
@@ -25,26 +19,16 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 exe = EXE(
-    pyz,
-    a.scripts,
-    [],
+    pyz, a.scripts, [],
     exclude_binaries=True,
     name='Prekladac',
-    debug=False,
-    strip=False,
-    upx=False,
-    console=False,
-    argv_emulation=True,
+    debug=False, strip=False, upx=False,
+    console=False, argv_emulation=True,
 )
 
 coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=False,
-    name='Prekladac',
+    exe, a.binaries, a.zipfiles, a.datas,
+    strip=False, upx=False, name='Prekladac',
 )
 
 app = BUNDLE(
@@ -55,12 +39,12 @@ app = BUNDLE(
     info_plist={
         'CFBundleName': 'Prekladac',
         'CFBundleDisplayName': 'Prekladac',
-        'CFBundleVersion': '1.0.0',
-        'CFBundleShortVersionString': '1.0',
+        'CFBundleVersion': '1.1.0',
+        'CFBundleShortVersionString': '1.1',
         'NSHighResolutionCapable': True,
         'LSUIElement': True,
-        'NSAccessibilityUsageDescription': 'Prekladač potrebuje Accessibility pre globálne skratky.',
-        'NSScreenCaptureUsageDescription': 'Prekladač potrebuje Screen Recording pre OCR.',
-        'NSAppleEventsUsageDescription': 'Prekladač zobrazuje dialógy.',
+        'NSAccessibilityUsageDescription': 'Pre globalne klavesove skratky.',
+        'NSScreenCaptureUsageDescription': 'Pre OCR funkciu.',
+        'NSAppleEventsUsageDescription': 'Pre zobrazenie dialogov.',
     },
 )

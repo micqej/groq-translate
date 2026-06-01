@@ -1,82 +1,73 @@
 """
-Global hotkeys via macOS Quartz CGEventTap (no pynput).
-  CMD+K       → OCR
-  Double CMD+C → translate clipboard
+Global hotkeys via macOS CGEventTap (Quartz).
+  ⌘K       → OCR
+  ⌘C ⌘C   → translate clipboard (double tap within 0.5s)
 """
 
 import threading
 import time
-import ctypes
-import objc
-from Quartz import (
-    CGEventTapCreate,
-    CGEventTapEnable,
-    CFMachPortCreateRunLoopSource,
-    CFRunLoopAddSource,
-    CFRunLoopGetCurrent,
-    CFRunLoopRun,
-    kCGSessionEventTap,
-    kCGHeadInsertEventTap,
-    kCGEventFlagMaskCommand,
-    kCGEventKeyDown,
-    CGEventGetIntegerValueField,
-    CGEventGetFlags,
-    kCGKeyboardEventKeycode,
-)
-import CoreFoundation
-
-# macOS keycodes
-KEY_C = 8
-KEY_K = 40
 
 
 class HotkeyManager:
     def __init__(self, on_ocr, on_clipboard):
         self.on_ocr = on_ocr
         self.on_clipboard = on_clipboard
-        self._last_c_time = 0.0
-        self._thread = None
+        self._last_c = 0.0
 
     def start(self):
-        self._thread = threading.Thread(target=self._run_loop, daemon=True)
-        self._thread.start()
+        t = threading.Thread(target=self._run, daemon=True)
+        t.start()
 
-    def _run_loop(self):
-        def callback(proxy, event_type, event, refcon):
-            try:
-                if event_type == kCGEventKeyDown:
-                    flags = CGEventGetFlags(event)
-                    cmd = bool(flags & kCGEventFlagMaskCommand)
-                    keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
+    def _run(self):
+        try:
+            import Quartz
+            import CoreFoundation
 
-                    if cmd and keycode == KEY_K:
-                        threading.Thread(target=self.on_ocr, daemon=True).start()
+            KEY_C = 8
+            KEY_K = 40
+            CMD = Quartz.kCGEventFlagMaskCommand
 
-                    elif cmd and keycode == KEY_C:
-                        now = time.time()
-                        if now - self._last_c_time < 0.45:
-                            threading.Thread(target=self.on_clipboard, daemon=True).start()
-                            self._last_c_time = 0
-                        else:
-                            self._last_c_time = now
-            except Exception:
-                pass
-            return event
+            def handler(proxy, etype, event, _):
+                try:
+                    if etype == Quartz.kCGEventKeyDown:
+                        flags = Quartz.CGEventGetFlags(event)
+                        key = Quartz.CGEventGetIntegerValueField(
+                            event, Quartz.kCGKeyboardEventKeycode
+                        )
+                        if flags & CMD:
+                            if key == KEY_K:
+                                threading.Thread(target=self.on_ocr, daemon=True).start()
+                            elif key == KEY_C:
+                                now = time.time()
+                                if now - self._last_c < 0.5:
+                                    threading.Thread(target=self.on_clipboard, daemon=True).start()
+                                    self._last_c = 0
+                                else:
+                                    self._last_c = now
+                except Exception:
+                    pass
+                return event
 
-        tap = CGEventTapCreate(
-            kCGSessionEventTap,
-            kCGHeadInsertEventTap,
-            0,
-            (1 << kCGEventKeyDown),
-            callback,
-            None,
-        )
+            mask = 1 << Quartz.kCGEventKeyDown
+            tap = Quartz.CGEventTapCreate(
+                Quartz.kCGSessionEventTap,
+                Quartz.kCGHeadInsertEventTap,
+                0,
+                mask,
+                handler,
+                None,
+            )
 
-        if tap is None:
-            # No accessibility permission — hotkeys won't work but app still runs
-            return
+            if tap is None:
+                return  # No accessibility — app still works via menu
 
-        source = CFMachPortCreateRunLoopSource(None, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, CoreFoundation.kCFRunLoopCommonModes)
-        CGEventTapEnable(tap, True)
-        CFRunLoopRun()
+            src = Quartz.CFMachPortCreateRunLoopSource(None, tap, 0)
+            loop = CoreFoundation.CFRunLoopGetCurrent()
+            CoreFoundation.CFRunLoopAddSource(
+                loop, src, CoreFoundation.kCFRunLoopCommonModes
+            )
+            Quartz.CGEventTapEnable(tap, True)
+            CoreFoundation.CFRunLoopRun()
+
+        except Exception:
+            pass  # Hotkeys unavailable but app still works

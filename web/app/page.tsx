@@ -227,7 +227,7 @@ export default function Home() {
             </p>
 
             <a
-              href="https://github.com/micqej/groq-translate/releases/download/v1.0.0/Prekladac.zip"
+              href="https://github.com/micqej/groq-translate/releases/download/v1.1.0/Prekladac_v1.1.zip"
               className="inline-flex items-center justify-center gap-3 bg-[#6366f1] hover:bg-[#4f52d4] text-white font-bold px-10 py-4 rounded-xl text-lg transition-all hover:scale-105 mb-6"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
