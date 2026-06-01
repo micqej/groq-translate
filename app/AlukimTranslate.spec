@@ -29,7 +29,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Prekladač',
+    name='Prekladac',
     debug=False,
     strip=False,
     upx=False,
@@ -44,17 +44,17 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name='Prekladač',
+    name='Prekladac',
 )
 
 app = BUNDLE(
     coll,
-    name='Prekladač.app',
+    name='Prekladac.app',
     icon=None,
     bundle_identifier='sk.alukim.prekladac',
     info_plist={
-        'CFBundleName': 'Prekladač',
-        'CFBundleDisplayName': 'Prekladač',
+        'CFBundleName': 'Prekladac',
+        'CFBundleDisplayName': 'Prekladac',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0',
         'NSHighResolutionCapable': True,

@@ -44,7 +44,7 @@ const steps = [
   {
     num: "01",
     title: "Stiahni aplikáciu",
-    desc: 'Stiahni Prekladač.zip, rozbaľ a presuň do Applications.',
+    desc: 'Stiahni Prekladac.zip, rozbaľ a presuň do Applications.',
   },
   {
     num: "02",
@@ -227,20 +227,20 @@ export default function Home() {
             </p>
 
             <a
-              href="https://github.com/micqej/groq-translate/releases/download/v1.0.0/Prekladač.zip"
+              href="https://github.com/micqej/groq-translate/releases/download/v1.0.0/Prekladac.zip"
               className="inline-flex items-center justify-center gap-3 bg-[#6366f1] hover:bg-[#4f52d4] text-white font-bold px-10 py-4 rounded-xl text-lg transition-all hover:scale-105 mb-6"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Stiahnuť Prekladač.app
+              Stiahnuť Prekladac.app
             </a>
 
             {/* Install steps */}
             <div className="bg-[#1e1e2e] rounded-xl p-4 text-left mb-6 text-sm">
               <p className="text-[#94a3b8] text-xs font-semibold uppercase tracking-wider mb-3">Inštalácia</p>
               <div className="space-y-2">
-                {["1. Stiahni Prekladač.zip", "2. Rozbaľ a presuň .app do Applications", "3. Otvor (pravý klik → Otvoriť)", "4. Nastav API kľúč v menu bare"].map((s, i) => (
+                {["1. Stiahni Prekladac.zip", "2. Rozbaľ a presuň .app do Applications", "3. Otvor (pravý klik → Otvoriť)", "4. Nastav API kľúč v menu bare"].map((s, i) => (
                   <p key={i} className="text-[#e2e8f0] flex items-center gap-2">
                     <span className="text-[#6366f1]">→</span> {s}
                   </p>
