@@ -1,37 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
-
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('menubar_icon.png', '.')],
     hiddenimports=[
         'rumps',
-        'pynput',
-        'pynput.keyboard',
-        'pynput.mouse',
         'groq',
-        'groq._client',
         'httpx',
         'anyio',
         'certifi',
-        'tkinter',
-        'tkinter.ttk',
-        'tkinter.messagebox',
         'sqlite3',
-        'json',
-        'threading',
-        'subprocess',
+        'Quartz',
+        'CoreFoundation',
+        'objc',
     ],
     hookspath=[],
-    hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    excludes=['tkinter', '_tkinter', 'pynput'],
     noarchive=False,
 )
 
@@ -42,17 +29,12 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='AlukimTranslate',
+    name='Prekladač',
     debug=False,
-    bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
-    disable_windowed_traceback=False,
     argv_emulation=True,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
 )
 
 coll = COLLECT(
@@ -61,24 +43,24 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='AlukimTranslate',
+    upx=False,
+    name='Prekladač',
 )
 
 app = BUNDLE(
     coll,
-    name='AlukimTranslate.app',
+    name='Prekladač.app',
     icon=None,
-    bundle_identifier='sk.alukim.translate',
+    bundle_identifier='sk.alukim.prekladac',
     info_plist={
-        'CFBundleName': 'AlukimTranslate',
-        'CFBundleDisplayName': 'AlukimTranslate',
+        'CFBundleName': 'Prekladač',
+        'CFBundleDisplayName': 'Prekladač',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0',
         'NSHighResolutionCapable': True,
-        'LSUIElement': True,  # menu bar only app, no Dock icon
-        'NSAccessibilityUsageDescription': 'AlukimTranslate potrebuje Accessibility pre globálne klávesové skratky.',
-        'NSScreenCaptureDescription': 'AlukimTranslate potrebuje Screen Recording pre OCR funkciu.',
+        'LSUIElement': True,
+        'NSAccessibilityUsageDescription': 'Prekladač potrebuje Accessibility pre globálne skratky.',
+        'NSScreenCaptureUsageDescription': 'Prekladač potrebuje Screen Recording pre OCR.',
+        'NSAppleEventsUsageDescription': 'Prekladač zobrazuje dialógy.',
     },
 )

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Build GroqTranslate.app for macOS distribution
+# Build AlukimTranslate.app for macOS distribution
 
 set -e
 
-echo "🔨 Building GroqTranslate..."
+echo "🔨 Building AlukimTranslate..."
 
 # Install dependencies
 pip3 install -r requirements.txt
@@ -11,7 +11,7 @@ pip3 install pyinstaller
 
 # Build .app bundle
 pyinstaller \
-  --name "GroqTranslate" \
+  --name "AlukimTranslate" \
   --windowed \
   --onedir \
   --icon=../web/public/icon.icns \
@@ -19,24 +19,24 @@ pyinstaller \
   --hidden-import rumps \
   --hidden-import pynput \
   --hidden-import groq \
-  --osx-bundle-identifier "sk.alukim.groq-translate" \
+  --osx-bundle-identifier "sk.alukim.alukim-translate" \
   main.py
 
-echo "✅ Build complete: dist/GroqTranslate.app"
+echo "✅ Build complete: dist/AlukimTranslate.app"
 
 # Create DMG
 if command -v create-dmg &> /dev/null; then
   create-dmg \
-    --volname "GroqTranslate" \
+    --volname "AlukimTranslate" \
     --window-size 600 400 \
     --icon-size 128 \
     --app-drop-link 450 185 \
-    "dist/GroqTranslate.dmg" \
-    "dist/GroqTranslate.app"
-  echo "✅ DMG: dist/GroqTranslate.dmg"
+    "dist/AlukimTranslate.dmg" \
+    "dist/AlukimTranslate.app"
+  echo "✅ DMG: dist/AlukimTranslate.dmg"
 else
   echo "ℹ️  Nainštaluj create-dmg pre .dmg balík: brew install create-dmg"
   # Simple zip fallback
-  cd dist && zip -r GroqTranslate.zip GroqTranslate.app
-  echo "✅ ZIP: dist/GroqTranslate.zip"
+  cd dist && zip -r AlukimTranslate.zip AlukimTranslate.app
+  echo "✅ ZIP: dist/AlukimTranslate.zip"
 fi

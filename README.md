@@ -1,4 +1,4 @@
-# ⚡ GroqTranslate
+# ⚡ AlukimTranslate
 
 macOS menu bar translator powered by Groq AI. Translate anything on your screen with a keyboard shortcut.
 

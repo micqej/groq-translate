@@ -137,7 +137,7 @@ class SettingsWindow:
 
     def run(self):
         win = tk.Tk()
-        win.title("GroqTranslate — Nastavenia")
+        win.title("AlukimTranslate — Nastavenia")
         win.geometry("480x320")
         win.resizable(False, False)
         _apply_dark_style(win)
@@ -145,7 +145,7 @@ class SettingsWindow:
         # Header
         tk.Label(win, text="⚙️  Nastavenia", font=("SF Pro Display", 18, "bold"),
                  bg=BG_DARK, fg=TEXT_PRIMARY).pack(pady=(24, 4))
-        tk.Label(win, text="Nakonfiguruj si GroqTranslate", font=("SF Pro Display", 12),
+        tk.Label(win, text="Nakonfiguruj si AlukimTranslate", font=("SF Pro Display", 12),
                  bg=BG_DARK, fg=TEXT_SECONDARY).pack(pady=(0, 20))
 
         form = tk.Frame(win, bg=BG_DARK, padx=32)
@@ -196,7 +196,7 @@ class HistoryWindow:
 
     def run(self):
         win = tk.Tk()
-        win.title("GroqTranslate — História prekladov")
+        win.title("AlukimTranslate — História prekladov")
         win.geometry("720x520")
         _apply_dark_style(win)
 

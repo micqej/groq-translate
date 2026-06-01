@@ -1,9 +1,9 @@
 #!/bin/bash
-# GroqTranslate — jednoduchá inštalácia
+# AlukimTranslate — jednoduchá inštalácia
 set -e
 
 echo ""
-echo "⚡ GroqTranslate Inštalátor"
+echo "⚡ AlukimTranslate Inštalátor"
 echo "=========================="
 echo ""
 
@@ -24,7 +24,7 @@ pip3 install -r "$(dirname "$0")/requirements.txt" --quiet
 
 echo "✓ Závislosti nainštalované"
 echo ""
-echo "🚀 Spúšťam GroqTranslate..."
+echo "🚀 Spúšťam AlukimTranslate..."
 echo ""
 echo "ℹ️  Pri prvom spustení:"
 echo "   1. Povoľ Accessibility permission (pre skratky)"

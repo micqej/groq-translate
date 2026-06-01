@@ -1,12 +1,33 @@
 """
-Global hotkey listener:
-  - CMD+K       → OCR capture & translate
-  - double CMD+C → translate clipboard content
+Global hotkeys via macOS Quartz CGEventTap (no pynput).
+  CMD+K       → OCR
+  Double CMD+C → translate clipboard
 """
 
 import threading
 import time
-from pynput import keyboard
+import ctypes
+import objc
+from Quartz import (
+    CGEventTapCreate,
+    CGEventTapEnable,
+    CFMachPortCreateRunLoopSource,
+    CFRunLoopAddSource,
+    CFRunLoopGetCurrent,
+    CFRunLoopRun,
+    kCGSessionEventTap,
+    kCGHeadInsertEventTap,
+    kCGEventFlagMaskCommand,
+    kCGEventKeyDown,
+    CGEventGetIntegerValueField,
+    CGEventGetFlags,
+    kCGKeyboardEventKeycode,
+)
+import CoreFoundation
+
+# macOS keycodes
+KEY_C = 8
+KEY_K = 40
 
 
 class HotkeyManager:
@@ -14,52 +35,48 @@ class HotkeyManager:
         self.on_ocr = on_ocr
         self.on_clipboard = on_clipboard
         self._last_c_time = 0.0
-        self._double_tap_threshold = 0.4  # seconds
-        self._listener = None
-        self._pressed = set()
+        self._thread = None
 
     def start(self):
-        self._listener = keyboard.Listener(
-            on_press=self._on_press,
-            on_release=self._on_release,
-        )
-        self._listener.daemon = True
-        self._listener.start()
+        self._thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._thread.start()
 
-    def stop(self):
-        if self._listener:
-            self._listener.stop()
-
-    def _on_press(self, key):
-        self._pressed.add(key)
-
-        # CMD+K → OCR
-        cmd_pressed = (
-            keyboard.Key.cmd in self._pressed
-            or keyboard.Key.cmd_l in self._pressed
-            or keyboard.Key.cmd_r in self._pressed
-        )
-
-        if cmd_pressed:
+    def _run_loop(self):
+        def callback(proxy, event_type, event, refcon):
             try:
-                if key.char == "k":
-                    threading.Thread(target=self.on_ocr, daemon=True).start()
-                    return
-            except AttributeError:
-                pass
+                if event_type == kCGEventKeyDown:
+                    flags = CGEventGetFlags(event)
+                    cmd = bool(flags & kCGEventFlagMaskCommand)
+                    keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode)
 
-        # Double CMD+C → clipboard translate
-        if cmd_pressed:
-            try:
-                if key.char == "c":
-                    now = time.time()
-                    if now - self._last_c_time < self._double_tap_threshold:
-                        threading.Thread(target=self.on_clipboard, daemon=True).start()
-                        self._last_c_time = 0.0
-                    else:
-                        self._last_c_time = now
-            except AttributeError:
-                pass
+                    if cmd and keycode == KEY_K:
+                        threading.Thread(target=self.on_ocr, daemon=True).start()
 
-    def _on_release(self, key):
-        self._pressed.discard(key)
+                    elif cmd and keycode == KEY_C:
+                        now = time.time()
+                        if now - self._last_c_time < 0.45:
+                            threading.Thread(target=self.on_clipboard, daemon=True).start()
+                            self._last_c_time = 0
+                        else:
+                            self._last_c_time = now
+            except Exception:
+                pass
+            return event
+
+        tap = CGEventTapCreate(
+            kCGSessionEventTap,
+            kCGHeadInsertEventTap,
+            0,
+            (1 << kCGEventKeyDown),
+            callback,
+            None,
+        )
+
+        if tap is None:
+            # No accessibility permission — hotkeys won't work but app still runs
+            return
+
+        source = CFMachPortCreateRunLoopSource(None, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, CoreFoundation.kCFRunLoopCommonModes)
+        CGEventTapEnable(tap, True)
+        CFRunLoopRun()
