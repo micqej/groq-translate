@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+*.dmg
+
+# Node
+web/node_modules/
+web/.next/
+web/out/
+
+# Secrets
+*.env
+config.json
