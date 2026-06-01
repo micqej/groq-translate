@@ -223,6 +223,7 @@ export default function Home() {
 
             <a
               href="/GroqTranslate.zip"
+              download="GroqTranslate.zip"
               className="inline-flex items-center justify-center gap-3 bg-[#6366f1] hover:bg-[#4f52d4] text-white font-bold px-10 py-4 rounded-xl text-lg transition-all hover:scale-105 mb-6"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,6 +231,13 @@ export default function Home() {
               </svg>
               Stiahnuť .zip (macOS)
             </a>
+
+            {/* Install steps */}
+            <div className="bg-[#1e1e2e] rounded-xl p-4 text-left mb-6 font-mono text-sm">
+              <p className="text-[#94a3b8] text-xs mb-2">Po stiahnutí spusti v Termináli:</p>
+              <p className="text-[#10b981]">cd ~/Downloads/app</p>
+              <p className="text-[#e2e8f0]">bash install.sh</p>
+            </div>
 
             <div className="border-t border-white/5 pt-6 text-left space-y-2">
               <p className="text-xs text-[#94a3b8] font-semibold uppercase tracking-wider mb-3">Požiadavky</p>
